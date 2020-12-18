@@ -71,4 +71,33 @@ contract('DappTokenSale', function (accounts) {
   })
 
 
+  it('it ends token sale', function () {
+     return DappToken.deployed().then(function (instance) {
+      //Grab token instance first
+      tokenInstance = instance;
+      return DappTokenSale.deployed();
+    }).then(function (instance) {
+       //Grab token sale instance 
+      tokenSaleInstance = instance;
+      //Try to end salefrom account other than the admin
+      return tokenSaleInstance.endSale({from: buyer})
+    }).then(assert.fail).catch(function (error) {
+      console.log(error.message);
+      assert(error.message.indexOf('revert') >= 0, 'must be admin to end sale');
+      //end sale as admin
+      return tokenSaleInstance.endSale({from: admin})
+    }).then(function (receipt) {
+      return tokenInstance.balanceOf(admin); 
+    }).then(function (balance) {
+      assert.equal(balance.toNumber(), 999990, 'returns all unsold dapp tokens to admin');
+      // Check that token price was reset when selfdistruct was called 
+      return tokenSaleInstance.tokenPrice();
+    }).then(function (price) {
+      assert.equal(price.toNumber(), 0, 'token price was reset');
+    })
+
+  })
+
+
+
 })
